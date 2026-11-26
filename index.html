@@ -10,42 +10,129 @@
     *{box-sizing:border-box}
     :root{color-scheme:dark;font-family:"Songti SC","Noto Serif CJK SC",SimSun,serif;color:#f4e9d4;background:#0b1317}
     body{margin:0;min-height:100svh;display:grid;align-content:center;background:radial-gradient(ellipse at 60% 5%,#24323a,transparent 66%),#0b1317}
-    main{width:min(100% - 32px,960px);margin:24px auto 32px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 0 14px;border-bottom:1px solid #615442}
+    main{width:min(calc(100% - 32px),960px);margin:24px auto 32px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid #615442}
     h1{font-size:clamp(22px,3vw,34px);font-weight:500;letter-spacing:.15em;margin:0}
     header span{color:#c9b995;font-size:15px}
-    .stage{margin:14px 0 0;aspect-ratio:16/9;position:relative;background:#080d10;box-shadow:0 8px 34px #0006}
-    img,video{display:block;width:100%;height:100%;object-fit:contain}
+    .stage{margin-top:14px;aspect-ratio:16/9;position:relative;background:#080d10;box-shadow:0 8px 34px #0006}
+    picture,img,video{display:block;width:100%;height:100%;object-fit:contain}
     [hidden]{display:none!important}
     .actions{display:flex;gap:12px;align-items:center;justify-content:center;margin:23px 0 12px}
-    button,a{font:inherit}
+    button,a,select{font:inherit}
     .actions a,.actions button{display:inline-flex;align-items:center;justify-content:center;min-height:49px;padding:8px 32px;border:1px solid #97805b;cursor:pointer;font-size:19px;letter-spacing:.12em;color:#f4e3bf;text-decoration:none;background:#162025}
     .actions .play{background:#883426;border-color:#c19b61;color:#fff0cc}
     .actions :is(button,a):hover{filter:brightness(1.18)}
     :focus-visible{outline:2px solid #f0c777;outline-offset:4px}
     p{text-align:center;color:#d4c5aa;font-size:16px;line-height:1.6;margin:15px 0}
-    p a{color:#efcb91}
-    #watch{border:0;border-bottom:1px solid #786749;padding:5px 2px;color:#efcb91;background:transparent;cursor:pointer}
-    @media(max-width:520px){main{width:calc(100% - 24px)}.actions>*{flex:1}.actions a,.actions button{padding:8px 12px;font-size:18px}header span{font-size:14px}}
+    .caption{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;color:#d4c5aa;padding-top:10px}
+    .caption select,.status button{border:1px solid #76654b;background:#131d21;color:#f4e3bf;padding:5px 8px}
+    .status{font-size:14px}
+    @media(max-width:520px){main{width:calc(100% - 24px)}.actions>*{flex:1}.actions a,.actions button{padding:8px 10px;font-size:18px}header span,.caption{font-size:14px}}
   </style>
 </head>
 <body>
   <main>
     <header><h1>北斗司命</h1><span>紫微斗数互动影游</span></header>
     <div class="stage">
-      <img id="cover" src="./hall.jpg" alt="瑶光、天枢、玉衡同坐案前">
-      <video id="film" controls playsinline preload="none" poster="./poster.jpg" aria-label="《今夜，谁来断你的命》宣传片" hidden></video>
+      <picture id="cover"><source media="(max-width:600px)" srcset="./hall-640.webp"><img src="./hall-1200.webp" width="1200" height="675" alt="瑶光、天枢、玉衡同坐案前"></picture>
+      <video id="film" controls playsinline webkit-playsinline preload="none" aria-label="《今夜，谁来断你的命》宣传片" hidden></video>
+    </div>
+    <div id="details" class="caption" hidden>
+      <span>《今夜，谁来断你的命》 · 70 秒</span>
+      <label>画质 <select id="quality" aria-label="宣传片画质">
+        <option value="480">流畅 480p</option>
+        <option value="720" selected>标准 720p</option>
+        <option value="1080">高清 1080p</option>
+      </select></label>
     </div>
     <div class="actions">
       <a class="play" href="./game/index.html?portrait=quiet-callout&amp;light=night&amp;fix=hall-idle">进入游戏</a>
-      <a href="https://www.bilibili.com/video/BV1p2yWzNEBF/" target="_blank" rel="noopener noreferrer">看 B 站投稿</a>
+      <button id="watch" type="button" aria-controls="film" aria-expanded="false">播放宣传片</button>
     </div>
     <p id="line">门内低语，似道君事。推门入席，问一桩自己的心事。</p>
-    <p id="film-title" hidden>《北斗司命》同一件心事，三位星君为何算出不同答案？</p>
-    <p><button id="watch" type="button" aria-controls="film" aria-expanded="false">在本页播放宣传片 · 1080p</button></p>
-    <p id="alternate" hidden>也可在 <a href="https://www.bilibili.com/video/BV1p2yWzNEBF/" target="_blank" rel="noopener noreferrer">哔哩哔哩观看宣传片</a>。</p>
+    <p class="status" aria-live="polite"><span id="status"></span> <button type="button" id="retry" hidden>重试播放</button></p>
   </main>
-  <script src="./pv/hls.light.min.js" defer></script>
-  <script src="./watch.js?v=2" defer></script>
+  <script>
+    const film = document.querySelector('#film');
+    const watch = document.querySelector('#watch');
+    const quality = document.querySelector('#quality');
+    const status = document.querySelector('#status');
+    const retry = document.querySelector('#retry');
+    const connection = navigator.connection;
+    const slowNetwork = connection && (connection.saveData || /^(slow-2g|2g|3g)$/.test(connection.effectiveType) || (connection.downlink > 0 && connection.downlink < 2));
+    if (slowNetwork) quality.value = '480';
+    let manual = false;
+    let stallTimer;
+    let requestedAt = 0;
+    let sourceVersion = 0;
+    let mayPlay = false;
+
+    function settle() { clearTimeout(stallTimer); status.textContent = ''; retry.hidden = true; }
+    function play() {
+      const version = sourceVersion;
+      film.play().catch(error => {
+        if (version !== sourceVersion || film.hidden || error.name === 'AbortError') return;
+        if (error.name === 'NotAllowedError') {
+          clearTimeout(stallTimer);
+          status.textContent = '轻点画面上的播放键。';
+        }
+      });
+    }
+    function loadQuality(value, keepTime, resume) {
+      clearTimeout(stallTimer);
+      sourceVersion++;
+      requestedAt = keepTime;
+      quality.value = value;
+      retry.hidden = true;
+      mayPlay = resume;
+      film.src = './pv/v26-' + value + '.mp4';
+      film.preload = 'metadata';
+      film.load();
+      if (resume) { play(); waiting(); }
+    }
+    function waiting() {
+      if (film.hidden || !mayPlay || retry.hidden === false) return;
+      clearTimeout(stallTimer);
+      status.textContent = '正在缓冲…';
+      const version = sourceVersion;
+      stallTimer = setTimeout(() => {
+        if (version !== sourceVersion || film.hidden || film.ended || film.readyState >= 3) return;
+        if (!manual && quality.value !== '480') loadQuality('480', film.currentTime || requestedAt, true);
+        else { status.textContent = '连接较慢，可继续等待或重试。'; retry.hidden = false; }
+      }, 5500);
+    }
+    film.addEventListener('loadedmetadata', () => {
+      if (requestedAt > 0 && Number.isFinite(film.duration)) film.currentTime = Math.min(requestedAt, film.duration);
+      requestedAt = 0;
+    });
+    film.addEventListener('playing', () => { mayPlay = true; settle(); });
+    film.addEventListener('waiting', waiting);
+    film.addEventListener('pause', () => { if (film.readyState >= 2 && !film.seeking) { mayPlay = false; settle(); } });
+    film.addEventListener('play', () => { mayPlay = true; });
+    film.addEventListener('error', () => {
+      if (film.hidden || !film.error) return;
+      if (!manual && quality.value !== '480') { loadQuality('480', film.currentTime || requestedAt, mayPlay); return; }
+      clearTimeout(stallTimer);
+      status.textContent = '影片暂时未能载入。'; retry.hidden = false;
+    });
+    quality.addEventListener('change', () => {
+      manual = true;
+      loadQuality(quality.value, film.currentTime || requestedAt, !film.paused || mayPlay);
+    });
+    retry.addEventListener('click', () => loadQuality(quality.value, film.currentTime || requestedAt, true));
+    watch.addEventListener('click', () => {
+      const opening = film.hidden;
+      film.hidden = !opening;
+      document.querySelector('#details').hidden = !opening;
+      document.querySelector('#cover').hidden = opening;
+      document.querySelector('#line').hidden = opening;
+      watch.setAttribute('aria-expanded', String(opening));
+      watch.textContent = opening ? '收起宣传片' : '播放宣传片';
+      if (opening) {
+        if (!film.hasAttribute('src') || film.error) loadQuality(quality.value, film.currentTime || 0, true);
+        else play();
+      } else { mayPlay = false; film.pause(); settle(); }
+    });
+  </script>
 </body>
 </html>
