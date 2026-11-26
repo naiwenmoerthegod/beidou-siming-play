@@ -31,7 +31,7 @@ watch.addEventListener('click', () => {
   document.querySelector('#film-title').hidden = !opening;
   document.querySelector('#alternate').hidden = true;
   watch.setAttribute('aria-expanded', String(opening));
-  watch.textContent = opening ? '返回封面' : '观看宣传片';
+  watch.textContent = opening ? '收起宣传片' : '在本页播放宣传片 · 1080p';
   if (opening) {
     if (!prepared) prepared = prepareFilm();
     if (prepared) film.play().catch(e => { if (e.name !== 'AbortError' && e.name !== 'NotAllowedError') showAlternate(); });

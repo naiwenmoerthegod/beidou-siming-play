@@ -25,6 +25,7 @@
     :focus-visible{outline:2px solid #f0c777;outline-offset:4px}
     p{text-align:center;color:#d4c5aa;font-size:16px;line-height:1.6;margin:15px 0}
     p a{color:#efcb91}
+    #watch{border:0;border-bottom:1px solid #786749;padding:5px 2px;color:#efcb91;background:transparent;cursor:pointer}
     @media(max-width:520px){main{width:calc(100% - 24px)}.actions>*{flex:1}.actions a,.actions button{padding:8px 12px;font-size:18px}header span{font-size:14px}}
   </style>
 </head>
@@ -37,13 +38,14 @@
     </div>
     <div class="actions">
       <a class="play" href="./game/index.html?portrait=quiet-callout&amp;light=night&amp;fix=hall-idle">进入游戏</a>
-      <button id="watch" type="button" aria-controls="film" aria-expanded="false">观看宣传片</button>
+      <a href="https://www.bilibili.com/video/BV1p2yWzNEBF/" target="_blank" rel="noopener noreferrer">看 B 站投稿</a>
     </div>
     <p id="line">门内低语，似道君事。推门入席，问一桩自己的心事。</p>
-    <p id="film-title" hidden>《今夜，谁来断你的命》 · 70 秒</p>
+    <p id="film-title" hidden>《北斗司命》同一件心事，三位星君为何算出不同答案？</p>
+    <p><button id="watch" type="button" aria-controls="film" aria-expanded="false">在本页播放宣传片 · 1080p</button></p>
     <p id="alternate" hidden>也可在 <a href="https://www.bilibili.com/video/BV1p2yWzNEBF/" target="_blank" rel="noopener noreferrer">哔哩哔哩观看宣传片</a>。</p>
   </main>
   <script src="./pv/hls.light.min.js" defer></script>
-  <script src="./watch.js" defer></script>
+  <script src="./watch.js?v=2" defer></script>
 </body>
 </html>
